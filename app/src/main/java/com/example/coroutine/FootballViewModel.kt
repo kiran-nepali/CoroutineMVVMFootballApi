@@ -13,17 +13,43 @@ class FootballViewModel(private val myNetwork: MyNetwork) : ViewModel() {
 
     val teamname = MutableLiveData<FootballTeam>()
     val error = MutableLiveData<String>()
+    val progressState = MutableLiveData<ProgressState>()
 
     fun getFromFootballAPI() {
         val scope = CoroutineScope(Dispatchers.IO)
         scope.launch {
-            var response = myNetwork.getTeam(Constants.CLUB)
+            val response = myNetwork.getTeam(Constants.CLUB)
             withContext(Dispatchers.Main) {
                 try {
                     if (response.isSuccessful) {
-                        teamname.value = response.body()
+                        if (response.body()?.teams == null) {
+                            progressState.value = ProgressState.FAILURE
+                            error.value = "it is null"
+                        } else {
+                            teamname.value = response.body()
+                            progressState.value = ProgressState.SUCCESS
+                        }
                     } else {
-                        error.value = response.message()
+                        progressState.value = ProgressState.FAILURE
+                        error.value = response.errorBody().toString()
+                    }
+                } catch (cause: Throwable) {
+                    throw FootyTeamThrowError("error loading", cause)
+                }
+            }
+        }
+    }
+
+    sealed class ProgressState {
+        object SUCCESS : ProgressState()
+        object FAILURE : ProgressState()
+    }
+}
+
+
+class FootyTeamThrowError(message: String, cause: Throwable) : Throwable()
+
+
 //                        val errorResponse = Gson().fromJson<ErrorResponse>(
 //                            response.errorBody()?.string(),
 //                            ErrorResponse::class.java
@@ -34,20 +60,6 @@ class FootballViewModel(private val myNetwork: MyNetwork) : ViewModel() {
 //                        } else {
 //                            throw RuntimeException("Unknown Error")
 //                        }
-                    }
-                } catch (cause: Throwable) {
-                    throw FootyTeamThrowError("error loading", cause)
-                }
-            }
-        }
-    }
-}
-
-
-class FootyTeamThrowError(message: String, cause: Throwable) : Throwable()
-
-
-
 
 
 

@@ -27,15 +27,21 @@ class MainActivity : AppCompatActivity() {
             .get(FootballViewModel::class.java)
         viewModel.getFromFootballAPI()
         click_btn.setOnClickListener {
-            viewModel.teamname.observe(this, Observer {
-                tvdisplay.text = it.teams[0].strTeam
-            })
-            viewModel.error.observe(this, Observer {
-                Toast.makeText(this,it,Toast.LENGTH_SHORT).show()
+            viewModel.progressState.observe(this, Observer {
+                when (it) {
+                    FootballViewModel.ProgressState.SUCCESS -> viewModel.teamname.observe(
+                        this,
+                        Observer {
+                            tvdisplay.text = it.teams[0].strTeam
+                        })
+
+                    FootballViewModel.ProgressState.FAILURE -> viewModel.error.observe(
+                        this,
+                        Observer {
+                            Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+                        })
+                }
             })
         }
-
     }
-
-
 }

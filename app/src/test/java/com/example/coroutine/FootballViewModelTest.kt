@@ -10,12 +10,8 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
-import okhttp3.internal.EMPTY_RESPONSE
-import okhttp3.internal.http2.ErrorCode
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -23,7 +19,6 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.junit.MockitoJUnitRunner
 import retrofit2.Response
-import java.lang.RuntimeException
 
 @RunWith(MockitoJUnitRunner::class)
 class FootballViewModelTest {
@@ -41,13 +36,14 @@ class FootballViewModelTest {
 
     private var teamnameobserver: Observer<FootballTeam> = mock()
     private var errorobserver: Observer<String> = mock()
+    private var progressStateobserver: Observer<FootballViewModel.ProgressState> = mock()
 
     private var listOfTeams: List<Teams> = listOf(
         Teams(0, 2, 234, "chelsea"),
         Teams(1, 1, 300, "madrid")
     )
 
-    private var emptylistOfTeams:List<Teams> = emptyList()
+    private var emptylistOfTeams: List<Teams> = emptyList()
 
     private var errormsg = "No data found"
 
@@ -56,15 +52,20 @@ class FootballViewModelTest {
         this.viewmodel = FootballViewModel(myNetwork)
         viewmodel.teamname.observeForever(teamnameobserver)
         viewmodel.error.observeForever(errorobserver)
+        viewmodel.progressState.observeForever(progressStateobserver)
     }
 
     @ExperimentalCoroutinesApi
     @Test
-    fun `when api call is made, it returns empty list of teams`()=coroutinesTestRule.testDispatcher.runBlockingTest {
-        `when`(myNetwork.getTeam(Constants.CLUB)).thenReturn(Response.success(FootballTeam(emptylistOfTeams)))
-        viewmodel.getFromFootballAPI()
-        verify(teamnameobserver).onChanged(FootballTeam(emptylistOfTeams))
-    }
+    fun `when api call is made, it returns empty list of teams`() =
+        coroutinesTestRule.testDispatcher.runBlockingTest {
+            `when`(myNetwork.getTeam(Constants.CLUB)).thenReturn(
+                Response.success(FootballTeam(emptylistOfTeams))
+            )
+            viewmodel.getFromFootballAPI()
+            verify(teamnameobserver).onChanged(FootballTeam(emptylistOfTeams))
+            verify(progressStateobserver).onChanged(FootballViewModel.ProgressState.SUCCESS)
+        }
 
 
     @ExperimentalCoroutinesApi
@@ -72,26 +73,25 @@ class FootballViewModelTest {
     fun `when api call is successful, it returns response with data`() =
         coroutinesTestRule.testDispatcher.runBlockingTest {
             `when`(myNetwork.getTeam(Constants.CLUB)).thenReturn(
-                Response.success(
-                    FootballTeam(
-                        listOfTeams
-                    )
-                )
+                Response.success(FootballTeam(listOfTeams))
             )
             viewmodel.getFromFootballAPI()
             verify(myNetwork).getTeam(Constants.CLUB)
             verify(teamnameobserver).onChanged(FootballTeam(listOfTeams))
             verify(errorobserver, never()).onChanged(errormsg)
+            verify(progressStateobserver).onChanged(FootballViewModel.ProgressState.SUCCESS)
         }
 
     @ExperimentalCoroutinesApi
     @Test
-    fun `when api call is a failure, it returns error`()= coroutinesTestRule.testDispatcher.runBlockingTest {
-        `when`(myNetwork.getTeam(Constants.CLUB)).thenReturn(Response.error<FootballTeam>(422,
-            errormsg.toResponseBody("text/plain".toMediaTypeOrNull())
-        ))
-        viewmodel.getFromFootballAPI()
-        verify(teamnameobserver, never()).onChanged(FootballTeam(listOfTeams))
-    }
+    fun `when api call is a failure, it returns error`() =
+        coroutinesTestRule.testDispatcher.runBlockingTest {
+            `when`(myNetwork.getTeam(Constants.CLUB)).thenReturn(
+                Response.error<FootballTeam>(422, errormsg.toResponseBody("text/plain".toMediaTypeOrNull()))
+            )
+            viewmodel.getFromFootballAPI()
+            verify(teamnameobserver, never()).onChanged(FootballTeam(listOfTeams))
+            verify(progressStateobserver).onChanged(FootballViewModel.ProgressState.FAILURE)
+        }
 
 }
