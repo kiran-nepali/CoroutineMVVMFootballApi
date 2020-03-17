@@ -1,6 +1,7 @@
 package com.example.coroutine
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -29,7 +30,11 @@ class MainActivity : AppCompatActivity() {
             viewModel.teamname.observe(this, Observer {
                 tvdisplay.text = it.teams[0].strTeam
             })
+            viewModel.error.observe(this, Observer {
+                Toast.makeText(this,it,Toast.LENGTH_SHORT).show()
+            })
         }
+
     }
 
 

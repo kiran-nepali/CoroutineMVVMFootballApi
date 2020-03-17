@@ -14,29 +14,26 @@ class FootballViewModel(private val myNetwork: MyNetwork) : ViewModel() {
     val teamname = MutableLiveData<FootballTeam>()
     val error = MutableLiveData<String>()
 
-//    suspend fun getDataFromAPI() {
-//        try {
-//            var response = myNetwork.getTeam(Constants.CLUB)
-//            if (response.isSuccessful) {
-//                teamname.value = response.body()
-//            } else {
-//                error.value = response.message()
-//            }
-//        } catch (cause: Throwable) {
-//            throw FootyTeamThrowError("error loading", cause)
-//        }
-//    }
-
     fun getFromFootballAPI() {
         val scope = CoroutineScope(Dispatchers.IO)
         scope.launch {
             var response = myNetwork.getTeam(Constants.CLUB)
-            withContext(Dispatchers.Main){
+            withContext(Dispatchers.Main) {
                 try {
                     if (response.isSuccessful) {
                         teamname.value = response.body()
                     } else {
                         error.value = response.message()
+//                        val errorResponse = Gson().fromJson<ErrorResponse>(
+//                            response.errorBody()?.string(),
+//                            ErrorResponse::class.java
+//                        )
+//                        if (errorResponse != null) {
+//                           throw RuntimeException(errorResponse.message)
+
+//                        } else {
+//                            throw RuntimeException("Unknown Error")
+//                        }
                     }
                 } catch (cause: Throwable) {
                     throw FootyTeamThrowError("error loading", cause)

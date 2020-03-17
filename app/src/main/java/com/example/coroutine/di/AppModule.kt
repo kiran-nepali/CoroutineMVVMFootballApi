@@ -3,6 +3,7 @@ package com.example.coroutine.di
 import com.example.coroutine.Constants
 import com.example.coroutine.FootballViewModelFactory
 import com.example.coroutine.network.MyNetwork
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import dagger.Module
 import dagger.Provides
 import okhttp3.OkHttpClient
@@ -24,6 +25,7 @@ class AppModule {
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(CoroutineCallAdapterFactory())
             .baseUrl(Constants.BASE_URL)
             .client(okHttpClient)
             .build()
